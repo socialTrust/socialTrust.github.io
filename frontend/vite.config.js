@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/', // GitHub Pages를 위한 절대 경로 설정 (docs 폴더가 루트가 됨)
+  base: './', // 상대 경로 설정으로 동적 import 경로 문제 해결
   server: {
     port: 8080,
   },
