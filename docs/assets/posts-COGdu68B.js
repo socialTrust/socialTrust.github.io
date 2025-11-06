@@ -1,0 +1,1 @@
+import{p as e}from"./index-DrWYcUKa.js";const a={getList(t=1,s=20){return e.get("/posts",{params:{page:t,limit:s}})},getDetail(t){return e.get(`/posts/${t}`)},create(t){return e.post("/posts",t)},update(t,s){return e.put(`/posts/${t}`,s)},delete(t){return e.delete(`/posts/${t}`)},search(t,s=1,r=20){return e.get("/search",{params:{q:t,page:s,limit:r}})}};export{a as p};
