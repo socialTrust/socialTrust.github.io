@@ -43,9 +43,10 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { postsAPI } from '../api/posts';
+import { usePostsStore } from '../stores/posts';
 
 const router = useRouter();
+const postsStore = usePostsStore();
 
 const form = ref({
   title: '',
@@ -60,8 +61,12 @@ const handleSubmit = async () => {
   error.value = '';
 
   try {
-    const response = await postsAPI.create(form.value);
-    router.push(`/posts/${response.data.post.id}`);
+    // Store를 통해 게시글 생성 (캐시 무효화 포함)
+    const newPost = await postsStore.createPost(form.value);
+    console.log('✅ 게시글 생성 완료, 리스트 캐시 무효화됨');
+
+    // 새 게시글 상세 페이지로 이동
+    router.push(`/posts/${newPost.id}`);
   } catch (err) {
     error.value = err.response?.data?.message || '게시글 작성에 실패했습니다.';
   } finally {

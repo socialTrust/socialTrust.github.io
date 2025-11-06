@@ -45,10 +45,11 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { postsAPI } from '../api/posts';
+import { usePostsStore } from '../stores/posts';
 
 const router = useRouter();
 const route = useRoute();
+const postsStore = usePostsStore();
 
 const form = ref({
   title: '',
@@ -63,9 +64,22 @@ const fetchPost = async () => {
   loading.value = true;
 
   try {
-    const response = await postsAPI.getDetail(route.params.id);
-    form.value.title = response.data.title;
-    form.value.content = response.data.content;
+    const postId = route.params.id;
+
+    // Store에서 캐시된 게시글 먼저 확인
+    const cachedPost = postsStore.getPostById(postId);
+
+    if (cachedPost) {
+      // 캐시된 데이터가 있으면 즉시 폼 채우기
+      form.value.title = cachedPost.title;
+      form.value.content = cachedPost.content;
+      console.log(`✨ 캐시된 게시글로 편집 폼 초기화 - ID ${postId}`);
+    }
+
+    // Store를 통해 데이터 가져오기 (캐시가 없으면 API 호출)
+    const post = await postsStore.fetchPostById(postId);
+    form.value.title = post.title;
+    form.value.content = post.content;
   } catch (err) {
     error.value = '게시글을 불러오는데 실패했습니다.';
   } finally {
@@ -78,7 +92,11 @@ const handleSubmit = async () => {
   error.value = '';
 
   try {
-    await postsAPI.update(route.params.id, form.value);
+    // Store를 통해 게시글 수정 (캐시 무효화 포함)
+    await postsStore.updatePost(route.params.id, form.value);
+    console.log('✅ 게시글 수정 완료, 캐시 갱신됨');
+
+    // 수정된 게시글 상세 페이지로 이동
     router.push(`/posts/${route.params.id}`);
   } catch (err) {
     error.value = err.response?.data?.message || '게시글 수정에 실패했습니다.';
