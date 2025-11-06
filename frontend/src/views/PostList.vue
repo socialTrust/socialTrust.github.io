@@ -58,32 +58,39 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { postsAPI } from '../api/posts';
 import { useAuthStore } from '../stores/auth';
+import { usePostsStore } from '../stores/posts';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const postsStore = usePostsStore();
 
 const posts = ref([]);
 const pagination = ref(null);
 const page = ref(1);
-const loading = ref(false);
-const error = ref('');
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
+const loading = computed(() => postsStore.loading);
+const error = computed(() => postsStore.error);
 
 const fetchPosts = async () => {
-  loading.value = true;
-  error.value = '';
-
   try {
-    const response = await postsAPI.getList(page.value);
-    posts.value = response.data.posts;
-    pagination.value = response.data.pagination;
+    // Store에서 캐시된 데이터 먼저 확인
+    const cachedData = postsStore.getListByPage(page.value);
+
+    if (cachedData) {
+      // 캐시된 데이터가 있으면 즉시 표시 (새로고침 없는 빠른 네비게이션)
+      posts.value = cachedData.posts;
+      pagination.value = cachedData.pagination;
+      console.log(`✨ 캐시된 데이터 사용 - 페이지 ${page.value}`);
+    }
+
+    // Store를 통해 데이터 가져오기 (캐시가 없으면 API 호출)
+    const data = await postsStore.fetchPosts(page.value);
+    posts.value = data.posts;
+    pagination.value = data.pagination;
   } catch (err) {
-    error.value = '게시글을 불러오는데 실패했습니다.';
-  } finally {
-    loading.value = false;
+    console.error('게시글 로딩 실패:', err);
   }
 };
 
@@ -94,7 +101,7 @@ const goToPost = (id) => {
 const changePage = (newPage) => {
   page.value = newPage;
   fetchPosts();
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const formatDate = (dateString) => {

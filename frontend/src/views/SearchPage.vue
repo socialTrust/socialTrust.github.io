@@ -70,20 +70,22 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { postsAPI } from '../api/posts';
+import { usePostsStore } from '../stores/posts';
 
 const router = useRouter();
+const postsStore = usePostsStore();
 
 const keyword = ref('');
 const searchKeyword = ref('');
 const posts = ref([]);
 const pagination = ref(null);
 const page = ref(1);
-const loading = ref(false);
-const error = ref('');
 const searched = ref(false);
+
+const loading = computed(() => postsStore.loading);
+const error = computed(() => postsStore.error);
 
 const handleSearch = async () => {
   if (!keyword.value.trim()) {
@@ -97,18 +99,25 @@ const handleSearch = async () => {
 };
 
 const performSearch = async () => {
-  loading.value = true;
-  error.value = '';
   searched.value = true;
 
   try {
-    const response = await postsAPI.search(searchKeyword.value, page.value);
-    posts.value = response.data.posts;
-    pagination.value = response.data.pagination;
+    // Store에서 캐시된 검색 결과 먼저 확인
+    const cachedResults = postsStore.getSearchResults(searchKeyword.value, page.value);
+
+    if (cachedResults) {
+      // 캐시된 데이터가 있으면 즉시 표시
+      posts.value = cachedResults.posts;
+      pagination.value = cachedResults.pagination;
+      console.log(`✨ 캐시된 검색 결과 사용 - "${searchKeyword.value}" 페이지 ${page.value}`);
+    }
+
+    // Store를 통해 데이터 가져오기 (캐시가 없으면 API 호출)
+    const data = await postsStore.searchPosts(searchKeyword.value, page.value);
+    posts.value = data.posts;
+    pagination.value = data.pagination;
   } catch (err) {
-    error.value = '검색에 실패했습니다.';
-  } finally {
-    loading.value = false;
+    console.error('검색 실패:', err);
   }
 };
 
@@ -119,7 +128,7 @@ const goToPost = (id) => {
 const changePage = (newPage) => {
   page.value = newPage;
   performSearch();
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const formatDate = (dateString) => {

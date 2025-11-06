@@ -75,13 +75,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { postsAPI } from '../api/posts';
 import { commentsAPI } from '../api/comments';
 import { useAuthStore } from '../stores/auth';
+import { usePostsStore } from '../stores/posts';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const postsStore = usePostsStore();
 
 const post = ref(null);
 const comments = ref([]);
@@ -102,10 +103,26 @@ const fetchPost = async () => {
   error.value = '';
 
   try {
-    const response = await postsAPI.getDetail(route.params.id);
-    post.value = response.data;
+    const postId = route.params.id;
+
+    // Store에서 캐시된 게시글 먼저 확인
+    const cachedPost = postsStore.getPostById(postId);
+
+    if (cachedPost) {
+      // 캐시된 데이터가 있으면 즉시 표시 (새로고침 없는 빠른 네비게이션)
+      post.value = cachedPost;
+      console.log(`✨ 캐시된 게시글 사용 - ID ${postId}`);
+    }
+
+    // Store를 통해 데이터 가져오기 (캐시가 없으면 API 호출)
+    const fetchedPost = await postsStore.fetchPostById(postId);
+    post.value = fetchedPost;
+
+    // 조회수 증가 (캐시 업데이트)
+    postsStore.incrementViewCount(postId);
   } catch (err) {
     error.value = '게시글을 불러오는데 실패했습니다.';
+    console.error('게시글 로딩 실패:', err);
   } finally {
     loading.value = false;
   }
@@ -116,7 +133,7 @@ const fetchComments = async () => {
     const response = await commentsAPI.getList(route.params.id);
     comments.value = response.data.comments;
   } catch (err) {
-    console.error('Failed to fetch comments:', err);
+    console.error('댓글 로딩 실패:', err);
   }
 };
 
@@ -175,7 +192,8 @@ const deletePost = async () => {
   if (!confirm('게시글을 삭제하시겠습니까?')) return;
 
   try {
-    await postsAPI.delete(route.params.id);
+    // Store를 통해 삭제 (캐시 무효화 포함)
+    await postsStore.deletePost(route.params.id);
     router.push('/posts');
   } catch (err) {
     alert('게시글 삭제에 실패했습니다.');

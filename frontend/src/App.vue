@@ -23,7 +23,11 @@
 
     <main class="main">
       <div class="container">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </div>
     </main>
 
@@ -53,6 +57,22 @@ const handleLogout = () => {
 </script>
 
 <style>
+/* 페이지 전환 애니메이션 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 .header {
   background: #2c3e50;
   color: white;
