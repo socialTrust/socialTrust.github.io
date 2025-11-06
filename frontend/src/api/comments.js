@@ -1,6 +1,10 @@
 import apiClient from './axios';
+import { mockCommentsAPI } from './mockApi';
 
-export const commentsAPI = {
+// Mock 모드 여부 확인
+const isMockMode = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+export const commentsAPI = isMockMode ? mockCommentsAPI : {
   getList(postId) {
     return apiClient.get(`/comments/post/${postId}`);
   },

@@ -119,7 +119,34 @@ npm run build
 **환경 변수 (.env)**
 ```
 VITE_API_URL=http://localhost:5000/api
+VITE_USE_MOCK_API=false
 ```
+
+### 4. Mock 모드로 프론트엔드만 실행 (백엔드 없이 UI 테스트)
+
+백엔드 서버 없이 프론트엔드만으로 UI를 테스트하고 개발할 수 있습니다.
+
+```bash
+cd frontend
+
+# .env 파일에서 Mock 모드 활성화
+# VITE_USE_MOCK_API=true 로 설정
+
+# 또는 직접 환경 변수로 실행
+VITE_USE_MOCK_API=true npm run dev
+```
+
+**Mock 모드 특징:**
+- 백엔드 API 서버 불필요
+- 미리 정의된 샘플 데이터 사용
+- 500ms 네트워크 지연 시뮬레이션
+- 모든 CRUD 작업 동작 (로컬 메모리 저장)
+- UI/UX 검증 및 데모에 최적
+
+**Mock 데이터:**
+- 사용자 2명
+- 게시글 5개
+- 댓글 여러 개
 
 ## API 엔드포인트
 
